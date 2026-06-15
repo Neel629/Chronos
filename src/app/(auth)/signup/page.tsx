@@ -81,8 +81,7 @@ export default function SignupPage() {
       <div className="text-center mb-8">
         <div className="flex justify-center mb-6 mt-2">
           <div className="h-16 w-16 transition-transform hover:scale-105">
-            <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-contain dark:hidden" />
-            <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-contain dark:block" />
+            <img src="/logo.png" alt="Chronos Logo" className="h-full w-full object-cover rounded-xl shadow-sm" />
           </div>
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Join Chronos</h1>

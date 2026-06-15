@@ -40,6 +40,9 @@ export const metadata: Metadata = {
       "The next-generation timetable and productivity app designed for Gen Z.",
     type: "website",
   },
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({

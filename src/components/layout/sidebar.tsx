@@ -56,8 +56,7 @@ export function Sidebar() {
         <div className="flex items-center justify-between h-16 px-4">
           <Link href="/today" className="flex items-center gap-2.5 group">
             <div className="flex h-9 w-9 items-center justify-center shrink-0 transition-transform group-hover:scale-105">
-              <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-contain dark:hidden" />
-              <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-contain dark:block" />
+              <img src="/logo.png" alt="Chronos Logo" className="h-full w-full object-cover rounded-xl shadow-sm" />
             </div>
             <AnimatePresence>
               {sidebarOpen && (

@@ -142,8 +142,7 @@ export function TopBar() {
             <SheetHeader className="px-6 py-5 border-b border-border/50 text-left">
               <SheetTitle className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center shrink-0">
-                  <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-contain dark:hidden" />
-                  <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-contain dark:block" />
+                  <img src="/logo.png" alt="Chronos Logo" className="h-full w-full object-cover rounded-xl shadow-sm" />
                 </div>
                 <span className="font-bold text-lg tracking-tight">Chronos</span>
               </SheetTitle>
@@ -196,8 +195,7 @@ export function TopBar() {
         </Sheet>
         <Link href="/today" className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center shrink-0">
-            <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-contain dark:hidden" />
-            <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-contain dark:block" />
+            <img src="/logo.png" alt="Chronos Logo" className="h-full w-full object-cover rounded-xl shadow-sm" />
           </div>
           <span className="font-bold text-lg tracking-tight">Chronos</span>
         </Link>
