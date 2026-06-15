@@ -47,5 +47,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Redirect logged-in users away from auth pages and landing page to the dashboard
+  if (user && ["/", "/login", "/signup"].includes(request.nextUrl.pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/today";
+    return NextResponse.redirect(url);
+  }
+
   return supabaseResponse;
 }

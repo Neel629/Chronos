@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Search, LogOut, Check } from "lucide-react";
+import { Bell, Menu, LogOut, Check, LayoutDashboard, Calendar, CheckSquare, Target, BookOpen, BarChart3, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -17,12 +17,33 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
 import { createClient } from "@/lib/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 import { useUserStore } from "@/stores/user-store";
+
+const navItems = [
+  { href: "/today", label: "Today", icon: LayoutDashboard },
+  { href: "/timetable", label: "Timetable", icon: Calendar },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/focus", label: "Focus", icon: Target },
+  { href: "/subjects", label: "Subjects", icon: BookOpen },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+];
+
+const bottomNavItems = [
+  { href: "/settings", label: "Settings", icon: Settings },
+];
 
 type Notification = {
   id: string;
@@ -35,8 +56,10 @@ type Notification = {
 
 export function TopBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const profile = useUserStore((s) => s.profile);
 
   useEffect(() => {
@@ -102,14 +125,77 @@ export function TopBar() {
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-xl px-4 lg:px-6">
       {/* Left */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-muted-foreground cursor-pointer"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center gap-2 lg:hidden">
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground cursor-pointer"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[280px] p-0 flex flex-col">
+            <SheetHeader className="p-4 border-b border-border/50 text-left">
+              <SheetTitle className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center shrink-0">
+                  <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-contain dark:hidden" />
+                  <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-contain dark:block" />
+                </div>
+                <span className="font-bold">Chronos</span>
+              </SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="flex-1 py-4">
+              <nav className="space-y-1.5 px-3">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                        isActive
+                          ? "bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      )}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </ScrollArea>
+            <div className="p-4 border-t border-border/50">
+              {bottomNavItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <div className="hidden lg:flex items-center gap-2">
+        {/* Placeholder to keep flex space consistent if needed */}
       </div>
 
       {/* Right */}
