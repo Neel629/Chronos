@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,10 +25,15 @@ export default function LoginPage() {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    
+    // Determine if input is email or phone
+    const isEmail = loginId.includes("@");
+    
+    const credentials = isEmail 
+      ? { email: loginId, password } 
+      : { phone: loginId, password };
+
+    const { error } = await supabase.auth.signInWithPassword(credentials);
 
     if (error) {
       setError(error.message);
@@ -109,17 +114,17 @@ export default function LoginPage() {
       {/* Email Form */}
       <form onSubmit={handleEmailLogin} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm">
-            Email
+          <Label htmlFor="loginId" className="text-sm">
+            Email or Phone Number
           </Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              id="email"
-              type="email"
-              placeholder="you@university.edu"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="loginId"
+              type="text"
+              placeholder="you@university.edu or +1234567890"
+              value={loginId}
+              onChange={(e) => setLoginId(e.target.value)}
               className="pl-10 h-11"
               required
             />
