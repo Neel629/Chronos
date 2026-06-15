@@ -14,6 +14,7 @@ import {
   Flame,
   ChevronLeft,
   Plus,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/today", label: "Today", icon: LayoutDashboard },
   { href: "/timetable", label: "Timetable", icon: Calendar },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/focus", label: "Focus", icon: Target },
   { href: "/subjects", label: "Subjects", icon: BookOpen },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];

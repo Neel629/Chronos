@@ -36,6 +36,7 @@ export default function TodayPage() {
   const tasks = useTaskStore((s) => s.tasks);
   const userStreak = useUserStore((s) => s.streak);
   const userXP = useUserStore((s) => s.xp);
+  const userStoreProfile = useUserStore((s) => s.profile);
 
   const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
   const todayEvents = events
@@ -64,7 +65,7 @@ export default function TodayPage() {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {greeting} 👋
+              {greeting}{userStoreProfile ? `, ${userStoreProfile.full_name?.split(" ")[0] || userStoreProfile.username}` : ""} 👋
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               {new Date().toLocaleDateString("en-US", {

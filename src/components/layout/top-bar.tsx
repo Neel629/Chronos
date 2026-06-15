@@ -22,6 +22,8 @@ import { createClient } from "@/lib/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
+import { useUserStore } from "@/stores/user-store";
+
 type Notification = {
   id: string;
   title: string;
@@ -35,6 +37,7 @@ export function TopBar() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const profile = useUserStore((s) => s.profile);
 
   useEffect(() => {
     fetchNotifications();
@@ -93,6 +96,8 @@ export function TopBar() {
     router.push("/login");
     router.refresh();
   }
+
+  const initial = profile?.full_name?.charAt(0) || profile?.username?.charAt(0) || "U";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-xl px-4 lg:px-6">
@@ -186,8 +191,11 @@ export function TopBar() {
             className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-accent transition-colors cursor-pointer"
           >
             <Avatar className="h-7 w-7">
-              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                U
+              {profile?.avatar_url && (
+                <img src={profile.avatar_url} alt={profile.username} className="h-full w-full object-cover" />
+              )}
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold uppercase">
+                {initial}
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>

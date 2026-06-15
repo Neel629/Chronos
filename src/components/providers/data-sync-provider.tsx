@@ -33,15 +33,18 @@ export function DataSyncProvider({ children }: { children: React.ReactNode }) {
         { data: profile },
         { data: streak },
         { data: xp },
+        { data: preferences },
       ] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase.from("streaks").select("*").eq("user_id", user.id).single(),
         supabase.from("user_xp").select("*").eq("user_id", user.id).single(),
+        supabase.from("user_preferences").select("*").eq("user_id", user.id).single(),
       ]);
 
       if (profile) setProfile(profile);
       if (streak) setStreak(streak);
       if (xp) setXP(xp);
+      if (preferences) useUserStore.getState().setPreferences(preferences);
 
       // 2. Fetch Timetables & Active Timetable
       const { data: timetables } = await supabase

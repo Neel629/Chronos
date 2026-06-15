@@ -25,14 +25,25 @@ interface XP {
   xp_to_next_level: number;
 }
 
+export interface UserPreferences {
+  theme: "light" | "dark" | "system";
+  accent_color: string;
+  week_start_day: number;
+  time_format: "12h" | "24h";
+  notification_enabled: boolean;
+  sound_enabled: boolean;
+}
+
 interface UserState {
   profile: UserProfile | null;
   streak: Streak | null;
   xp: XP | null;
+  preferences: UserPreferences | null;
   isLoading: boolean;
   setProfile: (profile: UserProfile | null) => void;
   setStreak: (streak: Streak | null) => void;
   setXP: (xp: XP | null) => void;
+  setPreferences: (preferences: UserPreferences | null) => void;
   setLoading: (loading: boolean) => void;
   incrementStreak: () => void;
   addXP: (amount: number) => void;
@@ -42,10 +53,12 @@ export const useUserStore = create<UserState>((set) => ({
   profile: null,
   streak: null,
   xp: null,
+  preferences: null,
   isLoading: true,
   setProfile: (profile) => set({ profile }),
   setStreak: (streak) => set({ streak }),
   setXP: (xp) => set({ xp }),
+  setPreferences: (preferences) => set({ preferences }),
   setLoading: (isLoading) => set({ isLoading }),
   incrementStreak: () =>
     set((state) => ({

@@ -81,6 +81,12 @@ export default function TasksPage() {
       toast.error("Failed to update task");
       // Revert optimistic
       updateTask(taskId, { status: task.status });
+    } else if (newStatus === "done") {
+      toast.success("Task completed! +10 XP 🎉");
+      import("@/lib/gamification").then(async ({ awardXP, checkAndIncrementStreak }) => {
+        await awardXP(10);
+        await checkAndIncrementStreak();
+      });
     }
   }
 

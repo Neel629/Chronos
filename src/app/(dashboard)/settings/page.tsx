@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings, User, Palette, Bell, Shield, Clock } from "lucide-react";
+import { Settings, User, Palette, Bell, Clock, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -15,8 +16,102 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUserStore, UserPreferences } from "@/stores/user-store";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
+  const { profile, preferences, setProfile, setPreferences, isLoading: storeLoading } = useUserStore();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [formProfile, setFormProfile] = useState({
+    full_name: "",
+    username: "",
+    institution: "",
+  });
+
+  const [formPrefs, setFormPrefs] = useState<Partial<UserPreferences>>({
+    theme: "system",
+    accent_color: "#6366F1",
+    time_format: "12h",
+    week_start_day: 1,
+    notification_enabled: true,
+    sound_enabled: true,
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setFormProfile({
+        full_name: profile.full_name || "",
+        username: profile.username || "",
+        institution: profile.institution || "",
+      });
+    }
+    if (preferences) {
+      setFormPrefs(preferences);
+    }
+  }, [profile, preferences]);
+
+  async function handleSave() {
+    if (!profile) return;
+    setIsSaving(true);
+    const supabase = createClient();
+
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: formProfile.full_name,
+          username: formProfile.username,
+          institution: formProfile.institution,
+        })
+        .eq("id", profile.id);
+
+      if (profileError) throw profileError;
+
+      // Update preferences
+      const { error: prefsError } = await supabase
+        .from("user_preferences")
+        .update({
+          ...formPrefs,
+        })
+        .eq("user_id", profile.id);
+
+      if (prefsError) throw prefsError;
+
+      // Update local store
+      setProfile({
+        ...profile,
+        full_name: formProfile.full_name,
+        username: formProfile.username,
+        institution: formProfile.institution,
+      });
+
+      if (preferences) {
+        setPreferences({
+          ...preferences,
+          ...(formPrefs as UserPreferences),
+        });
+      }
+
+      toast.success("Settings saved successfully");
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (storeLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary opacity-50" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
@@ -43,16 +138,31 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm">Full Name</Label>
-                <Input placeholder="Your name" className="h-10" />
+                <Input 
+                  placeholder="Your name" 
+                  className="h-10" 
+                  value={formProfile.full_name}
+                  onChange={(e) => setFormProfile({...formProfile, full_name: e.target.value})}
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm">Username</Label>
-                <Input placeholder="@username" className="h-10" />
+                <Input 
+                  placeholder="@username" 
+                  className="h-10" 
+                  value={formProfile.username}
+                  onChange={(e) => setFormProfile({...formProfile, username: e.target.value})}
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label className="text-sm">Institution</Label>
-              <Input placeholder="University or school name" className="h-10" />
+              <Input 
+                placeholder="University or school name" 
+                className="h-10" 
+                value={formProfile.institution}
+                onChange={(e) => setFormProfile({...formProfile, institution: e.target.value})}
+              />
             </div>
           </CardContent>
         </Card>
@@ -74,7 +184,10 @@ export default function SettingsPage() {
                 <Label className="text-sm">Theme</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">Choose your visual mode</p>
               </div>
-              <Select defaultValue="dark">
+              <Select 
+                value={formPrefs.theme || "system"} 
+                onValueChange={(v) => setFormPrefs({...formPrefs, theme: (v || "system") as any})}
+              >
                 <SelectTrigger className="w-32 h-9">
                   <SelectValue />
                 </SelectTrigger>
@@ -93,9 +206,10 @@ export default function SettingsPage() {
                   (color) => (
                     <button
                       key={color}
-                      className="h-8 w-8 rounded-full border-2 border-transparent hover:border-foreground/20 transition-colors cursor-pointer ring-offset-2 ring-offset-background focus:ring-2 focus:ring-primary"
+                      className={`h-8 w-8 rounded-full border-2 transition-colors cursor-pointer ring-offset-2 ring-offset-background focus:ring-2 focus:ring-primary ${formPrefs.accent_color === color ? "border-foreground ring-2 ring-primary" : "border-transparent hover:border-foreground/20"}`}
                       style={{ backgroundColor: color }}
                       aria-label={`Select color ${color}`}
+                      onClick={() => setFormPrefs({...formPrefs, accent_color: color})}
                     />
                   )
                 )}
@@ -118,7 +232,10 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-sm">Time Format</Label>
-              <Select defaultValue="12h">
+              <Select 
+                value={formPrefs.time_format || "12h"} 
+                onValueChange={(v) => setFormPrefs({...formPrefs, time_format: (v || "12h") as any})}
+              >
                 <SelectTrigger className="w-24 h-9">
                   <SelectValue />
                 </SelectTrigger>
@@ -131,13 +248,16 @@ export default function SettingsPage() {
             <Separator />
             <div className="flex items-center justify-between">
               <Label className="text-sm">Week Starts On</Label>
-              <Select defaultValue="monday">
+              <Select 
+                value={formPrefs.week_start_day?.toString() || "1"} 
+                onValueChange={(v) => setFormPrefs({...formPrefs, week_start_day: parseInt(v || "1")})}
+              >
                 <SelectTrigger className="w-28 h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="monday">Monday</SelectItem>
-                  <SelectItem value="sunday">Sunday</SelectItem>
+                  <SelectItem value="1">Monday</SelectItem>
+                  <SelectItem value="0">Sunday</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -160,7 +280,10 @@ export default function SettingsPage() {
                 <Label className="text-sm">Push Notifications</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">Class reminders and deadlines</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={formPrefs.notification_enabled ?? true} 
+                onCheckedChange={(c) => setFormPrefs({...formPrefs, notification_enabled: c})}
+              />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -168,15 +291,10 @@ export default function SettingsPage() {
                 <Label className="text-sm">Sound Effects</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">Task completion sounds</p>
               </div>
-              <Switch defaultChecked />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm">Streak Reminders</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">Don&apos;t lose your streak!</p>
-              </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={formPrefs.sound_enabled ?? true} 
+                onCheckedChange={(c) => setFormPrefs({...formPrefs, sound_enabled: c})}
+              />
             </div>
           </CardContent>
         </Card>
@@ -184,7 +302,12 @@ export default function SettingsPage() {
 
       {/* Save */}
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-        <Button className="shadow-lg shadow-primary/20 cursor-pointer">
+        <Button 
+          className="shadow-lg shadow-primary/20 cursor-pointer" 
+          onClick={handleSave} 
+          disabled={isSaving}
+        >
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Changes
         </Button>
       </motion.div>
