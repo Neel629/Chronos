@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import { useUserStore } from "@/stores/user-store";
+import { useTheme } from "next-themes";
 
 export function ThemeColorSync() {
   const preferences = useUserStore((s) => s.preferences);
+  const { setTheme, theme: currentTheme } = useTheme();
 
   useEffect(() => {
     if (preferences?.accent_color) {
@@ -27,6 +29,13 @@ export function ThemeColorSync() {
       root.style.removeProperty("--chart-1");
     }
   }, [preferences?.accent_color]);
+
+  // Sync dark/light theme from preferences on load/update
+  useEffect(() => {
+    if (preferences?.theme && preferences.theme !== currentTheme) {
+      setTheme(preferences.theme);
+    }
+  }, [preferences?.theme]);
 
   return null;
 }

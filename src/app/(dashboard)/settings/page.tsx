@@ -19,9 +19,11 @@ import {
 import { useUserStore, UserPreferences } from "@/stores/user-store";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 export default function SettingsPage() {
   const { profile, preferences, setProfile, setPreferences, isLoading: storeLoading } = useUserStore();
+  const { theme: currentTheme, setTheme } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
 
   const [formProfile, setFormProfile] = useState({
@@ -54,6 +56,8 @@ export default function SettingsPage() {
     // Cleanup preview on unmount
     return () => {
       const savedColor = useUserStore.getState().preferences?.accent_color;
+      const savedTheme = useUserStore.getState().preferences?.theme || "system";
+      
       const root = document.documentElement;
       if (savedColor) {
         root.style.setProperty("--primary", savedColor);
@@ -70,8 +74,20 @@ export default function SettingsPage() {
         root.style.removeProperty("--sidebar-ring");
         root.style.removeProperty("--chart-1");
       }
+      
+      // We cannot easily run hooks here, but setting theme via DOM or avoiding hook-based revert is hard. 
+      // Actually we CAN call setTheme if it's captured in the closure:
+      // However, we only revert if they didn't save. If they saved, preferences.theme matches the local state.
     };
   }, [profile, preferences]);
+
+  // Revert theme on unmount if not saved
+  useEffect(() => {
+    return () => {
+      const savedTheme = useUserStore.getState().preferences?.theme || "system";
+      setTheme(savedTheme);
+    };
+  }, [setTheme]);
 
   async function handleSave() {
     if (!profile) return;
@@ -207,7 +223,11 @@ export default function SettingsPage() {
               </div>
               <Select 
                 value={formPrefs.theme || "system"} 
-                onValueChange={(v) => setFormPrefs({...formPrefs, theme: (v || "system") as any})}
+                onValueChange={(v) => {
+                  const val = v || "system";
+                  setFormPrefs({...formPrefs, theme: val as any});
+                  setTheme(val);
+                }}
               >
                 <SelectTrigger className="w-32 h-9">
                   <SelectValue />
