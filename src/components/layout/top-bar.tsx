@@ -127,14 +127,16 @@ export function TopBar() {
       {/* Left */}
       <div className="flex items-center gap-2 lg:hidden">
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-muted-foreground cursor-pointer"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
+          <SheetTrigger 
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground cursor-pointer"
+              />
+            }
+          >
+            <Menu className="h-5 w-5" />
           </SheetTrigger>
           <SheetContent side="left" className="w-[300px] p-0 flex flex-col">
             <SheetHeader className="px-6 py-5 border-b border-border/50 text-left">
