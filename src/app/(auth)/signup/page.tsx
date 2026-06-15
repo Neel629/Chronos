@@ -79,10 +79,10 @@ export default function SignupPage() {
       transition={{ duration: 0.4 }}
     >
       <div className="text-center mb-8">
-        <div className="flex justify-center mb-4">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 overflow-hidden shadow-lg shadow-primary/20">
-            <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-cover dark:hidden" />
-            <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-cover dark:block" />
+        <div className="flex justify-center mb-6 mt-2">
+          <div className="h-16 w-16 transition-transform hover:scale-105">
+            <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-contain dark:hidden" />
+            <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-contain dark:block" />
           </div>
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Join Chronos</h1>
