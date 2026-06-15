@@ -50,6 +50,27 @@ export default function SettingsPage() {
     if (preferences) {
       setFormPrefs(preferences);
     }
+    
+    // Cleanup preview on unmount
+    return () => {
+      const savedColor = useUserStore.getState().preferences?.accent_color;
+      const root = document.documentElement;
+      if (savedColor) {
+        root.style.setProperty("--primary", savedColor);
+        root.style.setProperty("--brand", savedColor);
+        root.style.setProperty("--ring", savedColor);
+        root.style.setProperty("--sidebar-primary", savedColor);
+        root.style.setProperty("--sidebar-ring", savedColor);
+        root.style.setProperty("--chart-1", savedColor);
+      } else {
+        root.style.removeProperty("--primary");
+        root.style.removeProperty("--brand");
+        root.style.removeProperty("--ring");
+        root.style.removeProperty("--sidebar-primary");
+        root.style.removeProperty("--sidebar-ring");
+        root.style.removeProperty("--chart-1");
+      }
+    };
   }, [profile, preferences]);
 
   async function handleSave() {
@@ -209,7 +230,17 @@ export default function SettingsPage() {
                       className={`h-8 w-8 rounded-full border-2 transition-colors cursor-pointer ring-offset-2 ring-offset-background focus:ring-2 focus:ring-primary ${formPrefs.accent_color === color ? "border-foreground ring-2 ring-primary" : "border-transparent hover:border-foreground/20"}`}
                       style={{ backgroundColor: color }}
                       aria-label={`Select color ${color}`}
-                      onClick={() => setFormPrefs({...formPrefs, accent_color: color})}
+                      onClick={() => {
+                        setFormPrefs({...formPrefs, accent_color: color});
+                        // Immediate preview
+                        const root = document.documentElement;
+                        root.style.setProperty("--primary", color);
+                        root.style.setProperty("--brand", color);
+                        root.style.setProperty("--ring", color);
+                        root.style.setProperty("--sidebar-primary", color);
+                        root.style.setProperty("--sidebar-ring", color);
+                        root.style.setProperty("--chart-1", color);
+                      }}
                     />
                   )
                 )}
