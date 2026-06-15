@@ -79,7 +79,12 @@ export default function SignupPage() {
       transition={{ duration: 0.4 }}
     >
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
+        <div className="flex justify-center mb-4">
+          <div className="h-12 w-12 rounded-xl bg-primary/10 overflow-hidden shadow-lg shadow-primary/20">
+            <img src="/logo.png" alt="Chronos Logo" className="h-full w-full object-cover" />
+          </div>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Join Chronos</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Start building your streak today ⚡
         </p>
