@@ -227,10 +227,9 @@ export default function LandingPage() {
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform group-hover:scale-105">
-                <Clock className="h-4 w-4" />
+              <div className="relative flex h-9 w-9 items-center justify-center shrink-0">
+                <img src="/logo.png" alt="Chronos Logo" className="h-full w-full object-cover rounded-xl shadow-sm transition-transform group-hover:scale-105" />
               </div>
               <span className="text-lg font-bold tracking-tight">
                 Chronos
@@ -617,8 +616,8 @@ export default function LandingPage() {
       <footer className="border-t border-border/50 py-8 px-4">
         <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Clock className="h-3 w-3" />
+            <div className="flex h-7 w-7 items-center justify-center shrink-0">
+              <img src="/logo.png" alt="Chronos Logo" className="h-full w-full object-cover rounded-lg shadow-sm" />
             </div>
             <span className="text-sm font-semibold">Chronos</span>
           </div>
