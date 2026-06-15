@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, Search, LogOut, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -192,7 +192,7 @@ export function TopBar() {
           >
             <Avatar className="h-7 w-7">
               {profile?.avatar_url && (
-                <img src={profile.avatar_url} alt={profile.username} className="h-full w-full object-cover" />
+                <AvatarImage src={profile.avatar_url} alt={profile.username || "User avatar"} />
               )}
               <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold uppercase">
                 {initial}
