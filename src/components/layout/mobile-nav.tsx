@@ -8,6 +8,8 @@ import {
   CheckSquare,
   BarChart3,
   Plus,
+  Trophy,
+  Medal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui-store";
@@ -17,6 +19,7 @@ const mobileNavItems = [
   { href: "/timetable", label: "Table", icon: Calendar },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/analytics", label: "Stats", icon: BarChart3 },
+  { href: "/leaderboard", label: "Rank", icon: Medal },
 ];
 
 export function MobileNav() {

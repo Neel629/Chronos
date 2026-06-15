@@ -20,6 +20,7 @@ import { useTimetableStore } from "@/stores/timetable-store";
 import { useTaskStore } from "@/stores/task-store";
 import { useUserStore } from "@/stores/user-store";
 import Link from "next/link";
+import { isToday } from "date-fns";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 15 },
@@ -53,7 +54,7 @@ export default function TodayPage() {
 
   const todayTasks = tasks.filter((t) => {
     if (!t.due_date) return false;
-    return new Date(t.due_date).toDateString() === new Date().toDateString();
+    return isToday(new Date(t.due_date));
   });
 
   const completedToday = todayTasks.filter((t) => t.status === "done").length;

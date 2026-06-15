@@ -13,6 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTaskStore } from "@/stores/task-store";
 import { useTimetableStore } from "@/stores/timetable-store";
 import { useUserStore } from "@/stores/user-store";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from "date-fns";
 
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -46,8 +49,41 @@ export default function AnalyticsPage() {
     pct: totalStudyHours > 0 ? Math.round((s.hours / totalStudyHours) * 100) : 0
   }));
 
-  // Dummy chart data for week, simulating based on total hours
-  const studyHours = [0.5, 1.2, 0.8, 1.5, 2.0, totalStudyHours > 0 ? 1 : 0, totalStudyHours];
+  // Fetch real study hours from focus_sessions
+  const [studyHours, setStudyHours] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+
+  useEffect(() => {
+    async function fetchFocusSessions() {
+      if (!useUserStore.getState().profile) return;
+      
+      const supabase = createClient();
+      const now = new Date();
+      // startOfWeek with weekStartsOn: 1 (Monday)
+      const start = startOfWeek(now, { weekStartsOn: 1 });
+      const end = endOfWeek(now, { weekStartsOn: 1 });
+
+      const { data } = await supabase
+        .from("focus_sessions")
+        .select("duration_minutes, started_at")
+        .eq("status", "completed")
+        .gte("started_at", start.toISOString())
+        .lte("started_at", end.toISOString());
+
+      if (data) {
+        const hours = [0, 0, 0, 0, 0, 0, 0];
+        data.forEach((session) => {
+          const date = parseISO(session.started_at);
+          // getDay() is 0 for Sunday, we want 0 for Monday
+          const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1;
+          hours[dayIdx] += session.duration_minutes / 60;
+        });
+        setStudyHours(hours.map(h => Number(h.toFixed(1))));
+      }
+    }
+    
+    fetchFocusSessions();
+  }, []);
+
   const maxHours = Math.max(...studyHours, 1);
   return (
     <div className="max-w-5xl mx-auto space-y-6">

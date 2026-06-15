@@ -22,12 +22,17 @@ export default function TimetablePage() {
   const removeEvent = useTimetableStore(s => s.removeEvent);
   const setQuickAddOpen = useUIStore(s => s.setQuickAddOpen);
 
-  // Map events to the format expected by the UI (hours as numbers)
-  const mappedEvents = events.map(e => ({
-    ...e,
-    startHour: parseInt(e.start_time.split(":")[0]),
-    endHour: parseInt(e.end_time.split(":")[0])
-  }));
+  // Map events to the format expected by the UI (hours as numbers including minutes)
+  const mappedEvents = events.map(e => {
+    const [startH, startM] = e.start_time.split(":").map(Number);
+    const [endH, endM] = e.end_time.split(":").map(Number);
+    return {
+      ...e,
+      startHour: startH + startM / 60,
+      endHour: endH + endM / 60,
+      baseHour: startH
+    };
+  });
 
   const eventsForView =
     viewMode === "day"
@@ -187,10 +192,10 @@ export default function TimetablePage() {
                     : [selectedDay]
                   ).map((dayIdx) => {
                     const event = eventsForView.find(
-                      (e) => e.day_of_week === dayIdx && e.startHour === hour
+                      (e) => e.day_of_week === dayIdx && e.baseHour === hour
                     );
                     const isSpanned = eventsForView.some(
-                      (e) => e.day_of_week === dayIdx && e.startHour < hour && e.endHour > hour
+                      (e) => e.day_of_week === dayIdx && e.baseHour < hour && e.endHour > hour
                     );
                     const isToday = dayIdx === today;
 
@@ -207,9 +212,10 @@ export default function TimetablePage() {
                           <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="absolute inset-x-0.5 top-0.5 rounded-lg p-2 text-white group overflow-hidden z-10"
+                            className="absolute inset-x-0.5 rounded-lg p-2 text-white group overflow-hidden z-10"
                             style={{
                               backgroundColor: event.subject_color || "#6366F1",
+                              top: `${(event.startHour - event.baseHour) * 64 + 2}px`,
                               height: `${(event.endHour - event.startHour) * 64 - 4}px`,
                             }}
                           >

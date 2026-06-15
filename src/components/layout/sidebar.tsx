@@ -15,6 +15,8 @@ import {
   ChevronLeft,
   Plus,
   Target,
+  Trophy,
+  Medal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,8 +28,11 @@ const navItems = [
   { href: "/timetable", label: "Timetable", icon: Calendar },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/focus", label: "Focus", icon: Target },
+  { href: "/goals", label: "Goals", icon: Flame },
   { href: "/subjects", label: "Subjects", icon: BookOpen },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/achievements", label: "Achievements", icon: Trophy },
+  { href: "/leaderboard", label: "Leaderboard", icon: Medal },
 ];
 
 const bottomNavItems = [

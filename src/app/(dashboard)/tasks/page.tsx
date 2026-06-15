@@ -24,6 +24,7 @@ import { useTaskStore } from "@/stores/task-store";
 import { useUIStore } from "@/stores/ui-store";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { isToday, isAfter, startOfDay } from "date-fns";
 
 export default function TasksPage() {
   const { tasks, filter, setFilter, updateTask, removeTask } = useTaskStore();
@@ -36,19 +37,14 @@ export default function TasksPage() {
     if (filter === "completed") return isCompleted;
     if (isCompleted) return false;
     
-    // Simplistic filter mapping (could be enhanced based on dates)
+    // Proper timezone-aware filtering using date-fns
     if (filter === "today") {
       if (!task.due_date) return false;
-      const due = new Date(task.due_date).toDateString();
-      const today = new Date().toDateString();
-      return due === today;
+      return isToday(new Date(task.due_date));
     }
     if (filter === "upcoming") {
       if (!task.due_date) return false;
-      const due = new Date(task.due_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return due > today;
+      return isAfter(startOfDay(new Date(task.due_date)), startOfDay(new Date()));
     }
     return true;
   });

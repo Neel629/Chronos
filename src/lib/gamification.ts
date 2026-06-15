@@ -1,5 +1,6 @@
 import { createClient } from "./supabase/client";
 import { useUserStore } from "@/stores/user-store";
+import { toast } from "sonner";
 
 export async function awardXP(amount: number) {
   const supabase = createClient();
@@ -30,6 +31,8 @@ export async function awardXP(amount: number) {
       xp_to_next_level: nextLevelXP,
     })
     .eq("user_id", user.id);
+    
+  await checkAchievements(user.id);
 }
 
 export async function checkAndIncrementStreak() {
@@ -64,4 +67,58 @@ export async function checkAndIncrementStreak() {
       last_activity_date: todayStr,
     })
     .eq("user_id", user.id);
+    
+  await checkAchievements(user.id);
+}
+
+export async function checkAchievements(userId: string) {
+  const supabase = createClient();
+  
+  // Get user stats
+  const { count: tasksDone } = await supabase.from("tasks").select("*", { count: "exact", head: true }).eq("status", "done").eq("user_id", userId);
+  const { data: focusData } = await supabase.from("focus_sessions").select("duration_minutes").eq("status", "completed").eq("user_id", userId);
+  const totalFocusHours = focusData ? Math.floor(focusData.reduce((acc, curr) => acc + curr.duration_minutes, 0) / 60) : 0;
+  const currentStreak = useUserStore.getState().streak?.longest_streak || 0;
+
+  // Get all achievements
+  const { data: achievements } = await supabase.from("achievements").select("*");
+  if (!achievements) return;
+
+  // Get unlocked
+  const { data: unlocked } = await supabase.from("user_achievements").select("achievement_id").eq("user_id", userId);
+  const unlockedIds = new Set(unlocked?.map(u => u.achievement_id) || []);
+
+  for (const achievement of achievements) {
+    if (unlockedIds.has(achievement.id)) continue;
+
+    let earned = false;
+    if (achievement.requirement_type === "tasks_completed" && (tasksDone || 0) >= achievement.requirement_value) earned = true;
+    if (achievement.requirement_type === "streak_days" && currentStreak >= achievement.requirement_value) earned = true;
+    if (achievement.requirement_type === "focus_hours" && totalFocusHours >= achievement.requirement_value) earned = true;
+
+    if (earned) {
+      // Insert into user_achievements
+      await supabase.from("user_achievements").insert({
+        user_id: userId,
+        achievement_id: achievement.id
+      });
+      // Manually add XP without recursion
+      const currentXP = useUserStore.getState().xp;
+      if (currentXP) {
+         useUserStore.getState().addXP(achievement.xp_reward);
+         const newTotal = currentXP.total_xp + achievement.xp_reward;
+         await supabase.from("user_xp").update({ total_xp: newTotal }).eq("user_id", userId);
+      }
+      
+      toast.success(`Achievement Unlocked: ${achievement.name} 🎉`);
+      
+      // DB Notification
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: `Achievement Unlocked: ${achievement.name}`,
+        body: achievement.description,
+        type: "achievement"
+      });
+    }
+  }
 }
