@@ -136,18 +136,18 @@ export function TopBar() {
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[280px] p-0 flex flex-col">
-            <SheetHeader className="p-4 border-b border-border/50 text-left">
-              <SheetTitle className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center shrink-0">
+          <SheetContent side="left" className="w-[300px] p-0 flex flex-col">
+            <SheetHeader className="px-6 py-5 border-b border-border/50 text-left">
+              <SheetTitle className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center shrink-0">
                   <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-contain dark:hidden" />
                   <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-contain dark:block" />
                 </div>
-                <span className="font-bold">Chronos</span>
+                <span className="font-bold text-lg tracking-tight">Chronos</span>
               </SheetTitle>
             </SheetHeader>
-            <ScrollArea className="flex-1 py-4">
-              <nav className="space-y-1.5 px-3">
+            <ScrollArea className="flex-1 py-6">
+              <nav className="space-y-2 px-4">
                 {navItems.map((item) => {
                   const isActive = pathname === item.href;
                   return (
@@ -156,20 +156,20 @@ export function TopBar() {
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                        "flex items-center gap-4 rounded-xl px-4 py-3.5 transition-colors",
                         isActive
-                          ? "bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20"
-                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                          ? "bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
                       )}
                     >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.label}</span>
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      <span className="text-base">{item.label}</span>
                     </Link>
                   );
                 })}
               </nav>
             </ScrollArea>
-            <div className="p-4 border-t border-border/50">
+            <div className="p-4 border-t border-border/50 bg-muted/20">
               {bottomNavItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -178,14 +178,14 @@ export function TopBar() {
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                      "flex items-center gap-4 rounded-xl px-4 py-3.5 transition-colors",
                       isActive
-                        ? "bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        ? "bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/20"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
-                    <span>{item.label}</span>
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    <span className="text-base">{item.label}</span>
                   </Link>
                 );
               })}
