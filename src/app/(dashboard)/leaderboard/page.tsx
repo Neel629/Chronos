@@ -68,10 +68,10 @@ export default function LeaderboardPage() {
 
       <Card className="border-border/50 shadow-xl shadow-primary/5">
         <CardContent className="p-0">
-          <div className="grid grid-cols-[60px_1fr_100px_100px] text-xs font-semibold text-muted-foreground uppercase tracking-wider p-4 border-b border-border/50 bg-muted/30">
+          <div className="grid grid-cols-[40px_1fr_80px] sm:grid-cols-[60px_1fr_100px_100px] text-xs font-semibold text-muted-foreground uppercase tracking-wider p-3 sm:p-4 border-b border-border/50 bg-muted/30">
             <div className="text-center">Rank</div>
             <div>Student</div>
-            <div className="text-right">Level</div>
+            <div className="text-right hidden sm:block">Level</div>
             <div className="text-right">XP</div>
           </div>
           
@@ -90,14 +90,14 @@ export default function LeaderboardPage() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className={`grid grid-cols-[60px_1fr_100px_100px] items-center p-4 transition-colors hover:bg-muted/50 ${isCurrentUser ? 'bg-primary/10 hover:bg-primary/15' : ''}`}
+                  className={`grid grid-cols-[40px_1fr_80px] sm:grid-cols-[60px_1fr_100px_100px] items-center p-3 sm:p-4 transition-colors hover:bg-muted/50 ${isCurrentUser ? 'bg-primary/10 hover:bg-primary/15' : ''}`}
                 >
-                  <div className="text-center font-bold text-lg">
+                  <div className="text-center font-bold text-base sm:text-lg">
                     {RankIcon || <span className="text-muted-foreground">{i + 1}</span>}
                   </div>
                   
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
+                  <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-background shadow-sm">
                       <AvatarImage src={user.avatar_url || ''} />
                       <AvatarFallback className="bg-primary/20 text-primary font-semibold">
                         {(user.full_name?.[0] || user.username?.[0] || 'U').toUpperCase()}
@@ -114,7 +114,7 @@ export default function LeaderboardPage() {
                     </div>
                   </div>
                   
-                  <div className="text-right font-medium text-sm flex items-center justify-end gap-1 text-primary">
+                  <div className="text-right font-medium text-sm flex items-center justify-end gap-1 text-primary hidden sm:flex">
                     <Star className="h-3.5 w-3.5 fill-primary/20" />
                     {user.current_level}
                   </div>

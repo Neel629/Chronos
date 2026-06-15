@@ -18,15 +18,24 @@ export default function SubjectsPage() {
     
     // Optimistic UI update
     const previousSubjects = [...subjects];
+    const previousEvents = useTimetableStore.getState().events;
+    
     removeSubject(id);
+    useTimetableStore.getState().setEvents(previousEvents.filter(e => e.subject_id !== id));
 
     const supabase = createClient();
+    
+    // Clean up events explicitly in case cascade is not enabled
+    await supabase.from("timetable_events").delete().eq("subject_id", id);
     const { error } = await supabase.from("subjects").delete().eq("id", id);
     
     if (error) {
       toast.error("Failed to delete subject");
       // Revert on error
       useTimetableStore.getState().setSubjects(previousSubjects);
+      useTimetableStore.getState().setEvents(previousEvents);
+    } else {
+      toast.success("Subject and related classes deleted");
     }
   }
 

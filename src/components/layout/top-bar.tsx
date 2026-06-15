@@ -194,6 +194,13 @@ export function TopBar() {
             </div>
           </SheetContent>
         </Sheet>
+        <Link href="/today" className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center shrink-0">
+            <img src="/logo-light.png" alt="Chronos Logo" className="h-full w-full object-contain dark:hidden" />
+            <img src="/logo-dark.png" alt="Chronos Logo" className="hidden h-full w-full object-contain dark:block" />
+          </div>
+          <span className="font-bold text-lg tracking-tight">Chronos</span>
+        </Link>
       </div>
 
       <div className="hidden lg:flex items-center gap-2">
