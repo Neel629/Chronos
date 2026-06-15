@@ -1,0 +1,165 @@
+"use client";
+
+import { motion } from "framer-motion";
+import {
+  BarChart3,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  Flame,
+  Target,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+
+const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const studyHours = [4.5, 3.2, 5.1, 2.8, 6.0, 1.5, 0.5];
+const maxHours = Math.max(...studyHours);
+
+export default function AnalyticsPage() {
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <BarChart3 className="h-6 w-6 text-primary" />
+          Weekly Analytics
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          June 9 — June 15, 2026
+        </p>
+      </motion.div>
+
+      {/* Summary Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+      >
+        {[
+          { label: "Study Hours", value: "23.6h", icon: Clock, trend: "+12%" },
+          { label: "Tasks Done", value: "18", icon: CheckCircle2, trend: "+5" },
+          { label: "Streak", value: "12 days", icon: Flame, trend: "🔥" },
+          { label: "Focus Score", value: "87%", icon: Target, trend: "+3%" },
+        ].map((stat, i) => (
+          <Card key={stat.label}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <stat.icon className="h-4 w-4 text-muted-foreground" />
+                <span className="text-[10px] font-medium text-emerald-500 flex items-center gap-0.5">
+                  <TrendingUp className="h-3 w-3" />
+                  {stat.trend}
+                </span>
+              </div>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-[11px] text-muted-foreground">{stat.label}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </motion.div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* Study Hours Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="lg:col-span-3"
+        >
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base font-semibold">Study Hours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end justify-between gap-2 h-48">
+                {weekDays.map((day, i) => {
+                  const height = (studyHours[i] / maxHours) * 100;
+                  const isToday = i === new Date().getDay() - 1;
+                  return (
+                    <div key={day} className="flex-1 flex flex-col items-center gap-2">
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${height}%` }}
+                        transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: "easeOut" }}
+                        className="w-full max-w-[40px] rounded-t-lg relative group cursor-pointer"
+                        style={{
+                          backgroundColor: isToday
+                            ? "oklch(0.55 0.24 265)"
+                            : "oklch(0.55 0.24 265 / 20%)",
+                        }}
+                      >
+                        {/* Tooltip */}
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-popover text-popover-foreground text-[10px] font-medium px-2 py-1 rounded-md shadow-lg whitespace-nowrap border border-border/50">
+                          {studyHours[i]}h
+                        </div>
+                      </motion.div>
+                      <span className={`text-[10px] font-medium ${isToday ? "text-primary" : "text-muted-foreground"}`}>
+                        {day}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Subject Breakdown */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="lg:col-span-2"
+        >
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base font-semibold">
+                By Subject
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[
+                { name: "CS 101", hours: 8.2, color: "#10B981", pct: 35 },
+                { name: "Mathematics", hours: 6.1, color: "#6366F1", pct: 26 },
+                { name: "Physics", hours: 5.0, color: "#F59E0B", pct: 21 },
+                { name: "English", hours: 2.8, color: "#F43F5E", pct: 12 },
+                { name: "Design", hours: 1.5, color: "#A855F7", pct: 6 },
+              ].map((subject, i) => (
+                <motion.div
+                  key={subject.name}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 + i * 0.06 }}
+                  className="space-y-1.5"
+                >
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: subject.color }}
+                      />
+                      <span className="font-medium text-xs">{subject.name}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {subject.hours}h ({subject.pct}%)
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${subject.pct}%` }}
+                      transition={{ delay: 0.4 + i * 0.06, duration: 0.6 }}
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: subject.color }}
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
