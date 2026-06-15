@@ -3,21 +3,22 @@
 import { motion } from "framer-motion";
 import {
   Flame,
-  CheckCircle2,
+  Trophy,
+  Target,
   Clock,
   Calendar,
+  CheckCircle2,
   ArrowRight,
-  Zap,
-  Target,
   Plus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getGreeting } from "@/lib/utils";
-import { DAYS_SHORT } from "@/lib/constants";
+import { cn, getGreeting } from "@/lib/utils";
+import { useTimetableStore } from "@/stores/timetable-store";
+import { useTaskStore } from "@/stores/task-store";
+import { useUserStore } from "@/stores/user-store";
 import Link from "next/link";
 
 const fadeUp = {
@@ -25,33 +26,40 @@ const fadeUp = {
   visible: (i: number = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+    transition: { delay: i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
   }),
 };
 
-// Demo data for visual purposes until Supabase is connected
-const demoEvents = [
-  { id: "1", time: "9:00 AM", title: "Mathematics", room: "A-201", color: "#6366F1", type: "class" },
-  { id: "2", time: "11:00 AM", title: "Physics Lab", room: "Lab 3", color: "#F59E0B", type: "lab" },
-  { id: "3", time: "2:00 PM", title: "CS 101", room: "B-105", color: "#10B981", type: "class" },
-  { id: "4", time: "4:00 PM", title: "English", room: "C-302", color: "#F43F5E", type: "tutorial" },
-];
-
-const demoTasks = [
-  { id: "1", title: "Complete Math Assignment", subject: "Mathematics", color: "#6366F1", priority: "high", due: "Today" },
-  { id: "2", title: "Read Chapter 5 — Thermodynamics", subject: "Physics", color: "#F59E0B", priority: "medium", due: "Tomorrow" },
-  { id: "3", title: "Push Project Repo", subject: "CS 101", color: "#10B981", priority: "low", due: "Wed" },
-];
-
-const today = new Date();
-const dayName = DAYS_SHORT[today.getDay() === 0 ? 6 : today.getDay() - 1];
-
 export default function TodayPage() {
   const greeting = getGreeting();
+  const events = useTimetableStore((s) => s.events);
+  const tasks = useTaskStore((s) => s.tasks);
+  const userStreak = useUserStore((s) => s.streak);
+  const userXP = useUserStore((s) => s.xp);
+
+  const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+  const todayEvents = events
+    .filter((e) => e.day_of_week === todayIndex)
+    .map((e) => ({
+      id: e.id,
+      title: e.title,
+      type: e.event_type,
+      time: `${e.start_time.slice(0, 5)} - ${e.end_time.slice(0, 5)}`,
+      room: e.room,
+      color: e.subject_color || "#6366F1",
+    }))
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  const todayTasks = tasks.filter((t) => {
+    if (!t.due_date) return false;
+    return new Date(t.due_date).toDateString() === new Date().toDateString();
+  });
+
+  const completedToday = todayTasks.filter((t) => t.status === "done").length;
+  const pendingTasks = todayTasks.filter((t) => t.status !== "done");
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* ── Header ── */}
       <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0}>
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
@@ -59,7 +67,7 @@ export default function TodayPage() {
               {greeting} 👋
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {today.toLocaleDateString("en-US", {
+              {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
@@ -74,66 +82,72 @@ export default function TodayPage() {
         </div>
       </motion.div>
 
-      {/* ── Stats Row ── */}
       <motion.div
         variants={fadeUp}
         initial="hidden"
         animate="visible"
         custom={1}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        className="grid grid-cols-2 lg:grid-cols-3 gap-3"
       >
-        {/* Streak */}
         <Card className="border-streak/20 bg-streak/5">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="text-3xl animate-flame">🔥</div>
-            <div>
-              <div className="text-2xl font-bold">0</div>
-              <div className="text-[11px] text-muted-foreground">Day Streak</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* XP */}
-        <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Level 1</span>
+            <div className="flex items-center gap-2 text-orange-500">
+              <Flame className="h-5 w-5" />
+              <h3 className="font-semibold text-sm">Streak</h3>
             </div>
-            <Progress value={0} className="h-1.5" />
-            <div className="text-[10px] text-muted-foreground mt-1">0 / 100 XP</div>
+            <div className="text-3xl font-bold tracking-tight mt-2 flex items-baseline gap-1">
+              {userStreak?.current_streak || 0}{" "}
+              <span className="text-sm font-medium text-muted-foreground">days</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Keep it up! 🔥</p>
           </CardContent>
         </Card>
 
-        {/* Tasks Done */}
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
+        <Card className="bg-gradient-to-br from-amber-500/10 via-background to-background border-amber-500/20 overflow-hidden relative">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-amber-500">
+              <Trophy className="h-5 w-5" />
+              <h3 className="font-semibold text-sm">Experience</h3>
             </div>
-            <div>
-              <div className="text-2xl font-bold">0/3</div>
-              <div className="text-[11px] text-muted-foreground">Tasks Today</div>
+            <div className="text-3xl font-bold tracking-tight mt-2 flex items-baseline gap-1">
+              Lvl {userXP?.current_level || 1}
+            </div>
+            <div className="mt-3 space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{userXP?.total_xp || 0} XP</span>
+                <span>{userXP?.xp_to_next_level || 100} XP</span>
+              </div>
+              <Progress
+                value={
+                  ((userXP?.total_xp || 0) / (userXP?.xp_to_next_level || 100)) * 100
+                }
+                className="h-1.5"
+              />
             </div>
           </CardContent>
         </Card>
 
-        {/* Classes */}
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <Calendar className="h-5 w-5 text-primary" />
+        <Card className="bg-gradient-to-br from-emerald-500/10 via-background to-background border-emerald-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-emerald-500">
+              <Target className="h-5 w-5" />
+              <h3 className="font-semibold text-sm">Today's Tasks</h3>
             </div>
-            <div>
-              <div className="text-2xl font-bold">4</div>
-              <div className="text-[11px] text-muted-foreground">Classes Today</div>
+            <div className="text-3xl font-bold tracking-tight mt-2 flex items-baseline gap-1">
+              {completedToday}/{todayTasks.length}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {todayTasks.length === 0
+                ? "No tasks for today"
+                : completedToday === todayTasks.length
+                ? "All done! Great job! 🎉"
+                : "Tasks completed"}
+            </p>
           </CardContent>
         </Card>
       </motion.div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        {/* ── Schedule Timeline ── */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -148,51 +162,50 @@ export default function TodayPage() {
                   <Clock className="h-4 w-4 text-primary" />
                   Today&apos;s Schedule
                 </CardTitle>
-                <Link href="/timetable">
-                  <Button variant="ghost" size="sm" className="text-xs cursor-pointer">
-                    View full
-                    <ArrowRight className="ml-1 h-3 w-3" />
-                  </Button>
+                <Link
+                  href="/timetable"
+                  className="text-sm font-medium text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  View full
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {demoEvents.map((event, i) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + i * 0.08 }}
-                  className="group flex items-center gap-3 p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer"
-                >
-                  {/* Time */}
-                  <div className="w-16 text-xs text-muted-foreground font-medium shrink-0">
-                    {event.time}
-                  </div>
-
-                  {/* Color Bar */}
-                  <div
-                    className="w-1 h-10 rounded-full shrink-0"
-                    style={{ backgroundColor: event.color }}
-                  />
-
-                  {/* Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{event.title}</div>
-                    <div className="text-xs text-muted-foreground">{event.room}</div>
-                  </div>
-
-                  {/* Type Badge */}
-                  <Badge variant="secondary" className="text-[10px] capitalize shrink-0">
-                    {event.type}
-                  </Badge>
-                </motion.div>
-              ))}
+            <CardContent>
+              {todayEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+                  <Calendar className="h-8 w-8 opacity-20 mb-3" />
+                  <p className="text-sm">No classes today. Enjoy your free time!</p>
+                </div>
+              ) : (
+                <div className="relative pl-6 border-l-2 border-border/50 space-y-6">
+                  {todayEvents.map((event, i) => (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + i * 0.08 }}
+                      className="relative group"
+                    >
+                      <div
+                        className="absolute -left-[33px] top-1.5 h-3 w-3 rounded-full border-2 border-background"
+                        style={{ backgroundColor: event.color }}
+                      />
+                      <div className="text-xs font-semibold text-muted-foreground mb-1">
+                        {event.time}
+                      </div>
+                      <div className="font-medium">{event.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {event.room} • {event.type}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* ── Tasks ── */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -207,54 +220,56 @@ export default function TodayPage() {
                   <Target className="h-4 w-4 text-primary" />
                   Pending Tasks
                 </CardTitle>
-                <Link href="/tasks">
-                  <Button variant="ghost" size="sm" className="text-xs cursor-pointer">
-                    All tasks
-                    <ArrowRight className="ml-1 h-3 w-3" />
-                  </Button>
+                <Link
+                  href="/tasks"
+                  className="text-sm font-medium text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  View all
+                  <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              {demoTasks.map((task, i) => (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + i * 0.08 }}
-                  className="group flex items-center gap-3 p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer"
-                >
-                  {/* Checkbox */}
-                  <button className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-muted-foreground/30 hover:border-primary hover:bg-primary/10 transition-colors shrink-0 cursor-pointer">
-                    <CheckCircle2 className="h-3 w-3 opacity-0 group-hover:opacity-40 transition-opacity text-primary" />
-                  </button>
-
-                  {/* Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{task.title}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <div
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: task.color }}
-                      />
-                      <span className="text-[10px] text-muted-foreground">
-                        {task.subject}
-                      </span>
+              {pendingTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+                  <CheckCircle2 className="h-8 w-8 opacity-20 mb-3" />
+                  <p className="text-sm">All caught up! No pending tasks today.</p>
+                </div>
+              ) : (
+                pendingTasks.map((task, i) => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 + i * 0.08 }}
+                    className="group flex items-center gap-3 p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer"
+                  >
+                    <button className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-muted-foreground/30 hover:border-primary hover:bg-primary/10 transition-colors shrink-0 cursor-pointer">
+                      <CheckCircle2 className="h-3 w-3 opacity-0 group-hover:opacity-40 transition-opacity text-primary" />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{task.title}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <div
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: task.subject_color || "#6366F1" }}
+                        />
+                        <span className="text-[10px] text-muted-foreground">
+                          {task.subject_name || "No subject"}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Due */}
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    {task.due}
-                  </span>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              )}
 
               <Separator className="my-2 opacity-50" />
-              <Button variant="ghost" className="w-full text-xs text-muted-foreground cursor-pointer">
+              <button 
+                className="flex items-center justify-center w-full p-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
                 <Plus className="mr-1.5 h-3 w-3" />
                 Add task
-              </Button>
+              </button>
             </CardContent>
           </Card>
         </motion.div>

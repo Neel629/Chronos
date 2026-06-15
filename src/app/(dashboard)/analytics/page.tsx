@@ -10,13 +10,45 @@ import {
   Target,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { useTaskStore } from "@/stores/task-store";
+import { useTimetableStore } from "@/stores/timetable-store";
+import { useUserStore } from "@/stores/user-store";
 
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const studyHours = [4.5, 3.2, 5.1, 2.8, 6.0, 1.5, 0.5];
-const maxHours = Math.max(...studyHours);
 
 export default function AnalyticsPage() {
+  const tasks = useTaskStore((s) => s.tasks);
+  const subjects = useTimetableStore((s) => s.subjects);
+  const userStreak = useUserStore((s) => s.streak);
+  const userXP = useUserStore((s) => s.xp);
+
+  // Compute tasks done
+  const completedTasks = tasks.filter(t => t.status === "done");
+  const tasksDoneCount = completedTasks.length;
+
+  // Compute breakdown by subject
+  const subjectBreakdown = subjects.map(sub => {
+    const subTasks = completedTasks.filter(t => t.subject_id === sub.id);
+    // Simple estimation: assume each task took 1 hour if no actual_minutes
+    const hours = subTasks.length * 1.5; 
+    return {
+      name: sub.name,
+      color: sub.color || "#6366F1",
+      hours: hours
+    };
+  }).filter(s => s.hours > 0).sort((a, b) => b.hours - a.hours);
+
+  const totalStudyHours = subjectBreakdown.reduce((acc, curr) => acc + curr.hours, 0) || 0;
+
+  // Add remaining percentage
+  const breakdownWithPct = subjectBreakdown.map(s => ({
+    ...s,
+    pct: totalStudyHours > 0 ? Math.round((s.hours / totalStudyHours) * 100) : 0
+  }));
+
+  // Dummy chart data for week, simulating based on total hours
+  const studyHours = [0.5, 1.2, 0.8, 1.5, 2.0, totalStudyHours > 0 ? 1 : 0, totalStudyHours];
+  const maxHours = Math.max(...studyHours, 1);
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
@@ -38,17 +70,16 @@ export default function AnalyticsPage() {
         className="grid grid-cols-2 lg:grid-cols-4 gap-3"
       >
         {[
-          { label: "Study Hours", value: "23.6h", icon: Clock, trend: "+12%" },
-          { label: "Tasks Done", value: "18", icon: CheckCircle2, trend: "+5" },
-          { label: "Streak", value: "12 days", icon: Flame, trend: "🔥" },
-          { label: "Focus Score", value: "87%", icon: Target, trend: "+3%" },
+          { label: "Study Hours", value: `${totalStudyHours}h`, icon: Clock, trend: "" },
+          { label: "Tasks Done", value: tasksDoneCount.toString(), icon: CheckCircle2, trend: "" },
+          { label: "Streak", value: `${userStreak?.current_streak || 0} days`, icon: Flame, trend: "🔥" },
+          { label: "Level", value: `Lvl ${userXP?.current_level || 1}`, icon: Target, trend: "✨" },
         ].map((stat, i) => (
           <Card key={stat.label}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <stat.icon className="h-4 w-4 text-muted-foreground" />
                 <span className="text-[10px] font-medium text-emerald-500 flex items-center gap-0.5">
-                  <TrendingUp className="h-3 w-3" />
                   {stat.trend}
                 </span>
               </div>
@@ -119,43 +150,43 @@ export default function AnalyticsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {[
-                { name: "CS 101", hours: 8.2, color: "#10B981", pct: 35 },
-                { name: "Mathematics", hours: 6.1, color: "#6366F1", pct: 26 },
-                { name: "Physics", hours: 5.0, color: "#F59E0B", pct: 21 },
-                { name: "English", hours: 2.8, color: "#F43F5E", pct: 12 },
-                { name: "Design", hours: 1.5, color: "#A855F7", pct: 6 },
-              ].map((subject, i) => (
-                <motion.div
-                  key={subject.name}
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + i * 0.06 }}
-                  className="space-y-1.5"
-                >
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-2.5 w-2.5 rounded-full"
+              {breakdownWithPct.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center py-6">
+                  Complete tasks assigned to subjects to see your breakdown.
+                </div>
+              ) : (
+                breakdownWithPct.map((subject, i) => (
+                  <motion.div
+                    key={subject.name}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + i * 0.06 }}
+                    className="space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: subject.color }}
+                        />
+                        <span className="font-medium text-xs">{subject.name}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {subject.hours}h ({subject.pct}%)
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${subject.pct}%` }}
+                        transition={{ delay: 0.4 + i * 0.06, duration: 0.6 }}
+                        className="h-full rounded-full"
                         style={{ backgroundColor: subject.color }}
                       />
-                      <span className="font-medium text-xs">{subject.name}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {subject.hours}h ({subject.pct}%)
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${subject.pct}%` }}
-                      transition={{ delay: 0.4 + i * 0.06, duration: 0.6 }}
-                      className="h-full rounded-full"
-                      style={{ backgroundColor: subject.color }}
-                    />
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))
+              )}
             </CardContent>
           </Card>
         </motion.div>

@@ -11,55 +11,94 @@ import {
   Clock,
   AlertTriangle,
   ChevronDown,
+  CalendarIcon,
+  Check,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-
-const demoTasks = [
-  { id: "1", title: "Complete Math Assignment — Chapter 7", subject: "Mathematics", color: "#6366F1", priority: "high" as const, due: "Today", status: "todo" as const },
-  { id: "2", title: "Read Chapter 5 — Thermodynamics", subject: "Physics", color: "#F59E0B", priority: "medium" as const, due: "Tomorrow", status: "todo" as const },
-  { id: "3", title: "Push final project to GitHub", subject: "CS 101", color: "#10B981", priority: "urgent" as const, due: "Today", status: "in_progress" as const },
-  { id: "4", title: "Write essay outline — Shakespeare", subject: "English", color: "#F43F5E", priority: "medium" as const, due: "Fri", status: "todo" as const },
-  { id: "5", title: "Review lecture notes — Algorithms", subject: "CS 101", color: "#10B981", priority: "low" as const, due: "Next week", status: "todo" as const },
-  { id: "6", title: "Submit lab report", subject: "Physics", color: "#F59E0B", priority: "high" as const, due: "Wed", status: "done" as const },
-  { id: "7", title: "Design wireframes for project", subject: "Design", color: "#A855F7", priority: "medium" as const, due: "Done", status: "done" as const },
-];
-
-const priorityConfig = {
-  low: { color: "text-emerald-500", bg: "bg-emerald-500/10", label: "Low" },
-  medium: { color: "text-amber-500", bg: "bg-amber-500/10", label: "Medium" },
-  high: { color: "text-rose-500", bg: "bg-rose-500/10", label: "High" },
-  urgent: { color: "text-red-500", bg: "bg-red-500/10", label: "Urgent" },
-};
+import { useTaskStore } from "@/stores/task-store";
+import { useUIStore } from "@/stores/ui-store";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function TasksPage() {
-  const [filter, setFilter] = useState<"all" | "today" | "upcoming" | "completed">("all");
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const { tasks, filter, setFilter, updateTask, removeTask } = useTaskStore();
+  const setQuickAddOpen = useUIStore((s) => s.setQuickAddOpen);
+  const [localCompletedIds, setLocalCompletedIds] = useState<Set<string>>(new Set());
 
-  const filteredTasks = demoTasks.filter((task) => {
-    const isCompleted = task.status === "done" || completedIds.has(task.id);
-    switch (filter) {
-      case "today":
-        return task.due === "Today" && !isCompleted;
-      case "upcoming":
-        return task.due !== "Today" && !isCompleted;
-      case "completed":
-        return isCompleted;
-      default:
-        return !isCompleted;
+  // Filter logic
+  const filteredTasks = tasks.filter((task) => {
+    const isCompleted = task.status === "done" || localCompletedIds.has(task.id);
+    if (filter === "completed") return isCompleted;
+    if (isCompleted) return false;
+    
+    // Simplistic filter mapping (could be enhanced based on dates)
+    if (filter === "today") {
+      if (!task.due_date) return false;
+      const due = new Date(task.due_date).toDateString();
+      const today = new Date().toDateString();
+      return due === today;
     }
+    if (filter === "upcoming") {
+      if (!task.due_date) return false;
+      const due = new Date(task.due_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return due > today;
+    }
+    return true;
   });
 
-  function toggleComplete(id: string) {
-    setCompletedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  async function handleToggleComplete(taskId: string) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    
+    const newStatus = task.status === "done" ? "todo" : "done";
+    
+    // Optimistic
+    updateTask(taskId, { status: newStatus });
+    if (newStatus === "done") {
+      setLocalCompletedIds(prev => new Set(prev).add(taskId));
+    } else {
+      setLocalCompletedIds(prev => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+    }
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("tasks")
+      .update({ status: newStatus })
+      .eq("id", taskId);
+
+    if (error) {
+      toast.error("Failed to update task");
+      // Revert optimistic
+      updateTask(taskId, { status: task.status });
+    }
+  }
+
+  async function handleDelete(taskId: string) {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    
+    // Optimistic
+    const previousTasks = [...tasks];
+    removeTask(taskId);
+
+    const supabase = createClient();
+    const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+
+    if (error) {
+      toast.error("Failed to delete task");
+      // Revert optimistic
+      useTaskStore.getState().setTasks(previousTasks);
+    }
   }
 
   return (
@@ -76,125 +115,129 @@ export default function TasksPage() {
             Tasks
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {demoTasks.filter((t) => t.status !== "done" && !completedIds.has(t.id)).length} tasks remaining
+            {tasks.filter((t) => t.status !== "done" && !localCompletedIds.has(t.id)).length} tasks remaining
           </p>
         </div>
-        <Button size="sm" className="w-fit shadow-lg shadow-primary/20 cursor-pointer">
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          New Task
-        </Button>
+        <button 
+          onClick={() => setQuickAddOpen(true)}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all cursor-pointer"
+        >
+          <Plus className="h-4 w-4" />
+          <span>New Task</span>
+        </button>
       </motion.div>
 
       {/* Filters */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
           <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="all" className="text-xs cursor-pointer">All</TabsTrigger>
             <TabsTrigger value="today" className="text-xs cursor-pointer">Today</TabsTrigger>
             <TabsTrigger value="upcoming" className="text-xs cursor-pointer">Upcoming</TabsTrigger>
             <TabsTrigger value="completed" className="text-xs cursor-pointer">Completed</TabsTrigger>
           </TabsList>
+
+          <div className="space-y-2 mt-4">
+            <AnimatePresence mode="popLayout">
+              {filteredTasks.map((task, i) => {
+                const isDone = task.status === "done" || localCompletedIds.has(task.id);
+                return (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20, height: 0 }}
+                    transition={{ delay: i * 0.04, duration: 0.3 }}
+                    layout
+                  >
+                    <Card
+                      className={cn(
+                        "transition-all duration-200 hover:shadow-md group",
+                      )}
+                    >
+                      <CardContent className="p-4 flex items-center gap-3">
+                        <button
+                          onClick={() => handleToggleComplete(task.id)}
+                          className={cn(
+                            "mt-1 h-6 w-6 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer shrink-0",
+                            isDone ? "bg-emerald-500 border-emerald-500 text-white" : "border-muted-foreground/30 hover:border-primary"
+                          )}
+                        >
+                          {isDone && <Check className="h-4 w-4" />}
+                        </button>
+                        
+                        <div className={cn("flex-1 transition-all duration-300", isDone && "opacity-60")}>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className={cn("font-medium", isDone && "line-through decoration-muted-foreground/50")}>
+                                {task.title}
+                              </h3>
+                              {task.subject_id && (
+                                <div className="flex items-center gap-1.5 mt-1 text-xs font-medium" style={{ color: task.subject_color }}>
+                                  <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: task.subject_color }} />
+                                  {task.subject_name}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}
+                                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-muted-foreground">
+                            {task.due_date && (
+                              <div className="flex items-center gap-1">
+                                <CalendarIcon className="h-3.5 w-3.5" />
+                                {new Date(task.due_date).toLocaleDateString()}
+                              </div>
+                            )}
+                            <div className={cn(
+                              "flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase",
+                              task.priority === "urgent" ? "bg-red-500/10 text-red-500" :
+                              task.priority === "high" ? "bg-orange-500/10 text-orange-500" :
+                              task.priority === "medium" ? "bg-yellow-500/10 text-yellow-500" :
+                              "bg-blue-500/10 text-blue-500"
+                            )}>
+                              {task.priority}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {filteredTasks.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-16"
+              >
+                <div className="text-4xl mb-3">
+                  {filter === "completed" ? "🏆" : "✨"}
+                </div>
+                <h3 className="text-lg font-semibold mb-1">
+                  {filter === "completed"
+                    ? "No completed tasks yet"
+                    : "All clear!"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {filter === "completed"
+                    ? "Complete your first task to see it here."
+                    : "Nothing to do? That's suspicious 🤔"}
+                </p>
+              </motion.div>
+            )}
+          </div>
         </Tabs>
       </motion.div>
-
-      {/* Task List */}
-      <div className="space-y-2">
-        <AnimatePresence mode="popLayout">
-          {filteredTasks.map((task, i) => {
-            const isCompleted = task.status === "done" || completedIds.has(task.id);
-            const priority = priorityConfig[task.priority];
-
-            return (
-              <motion.div
-                key={task.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20, height: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.3 }}
-                layout
-              >
-                <Card
-                  className={cn(
-                    "transition-all duration-200 hover:shadow-md group cursor-pointer",
-                    isCompleted && "opacity-60"
-                  )}
-                >
-                  <CardContent className="p-4 flex items-center gap-3">
-                    {/* Checkbox */}
-                    <button
-                      onClick={() => toggleComplete(task.id)}
-                      className="shrink-0 cursor-pointer"
-                    >
-                      {isCompleted ? (
-                        <CheckCircle2 className="h-5 w-5 text-primary" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary/50 transition-colors" />
-                      )}
-                    </button>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className={cn(
-                          "text-sm font-medium truncate transition-all",
-                          isCompleted && "line-through text-muted-foreground"
-                        )}
-                      >
-                        {task.title}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div
-                          className="h-2 w-2 rounded-full shrink-0"
-                          style={{ backgroundColor: task.color }}
-                        />
-                        <span className="text-[11px] text-muted-foreground truncate">
-                          {task.subject}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Priority & Due */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge
-                        variant="secondary"
-                        className={cn("text-[10px]", priority.bg, priority.color)}
-                      >
-                        {priority.label}
-                      </Badge>
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {task.due}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-
-        {filteredTasks.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16"
-          >
-            <div className="text-4xl mb-3">
-              {filter === "completed" ? "🏆" : "✨"}
-            </div>
-            <h3 className="text-lg font-semibold mb-1">
-              {filter === "completed"
-                ? "No completed tasks yet"
-                : "All clear!"}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {filter === "completed"
-                ? "Complete your first task to see it here."
-                : "Nothing to do? That's suspicious 🤔"}
-            </p>
-          </motion.div>
-        )}
-      </div>
     </div>
   );
 }

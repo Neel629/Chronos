@@ -1,46 +1,53 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Clock,
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, Plus, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { DAYS_SHORT, TIME_SLOTS } from "@/lib/constants";
 import { formatTime } from "@/lib/utils";
-
-// Demo events for visual preview
-const demoEvents = [
-  { id: "1", day: 0, start: 9, end: 10, title: "Mathematics", room: "A-201", color: "#6366F1" },
-  { id: "2", day: 0, start: 11, end: 12, title: "Physics Lab", room: "Lab 3", color: "#F59E0B" },
-  { id: "3", day: 0, start: 14, end: 15, title: "CS 101", room: "B-105", color: "#10B981" },
-  { id: "4", day: 1, start: 9, end: 11, title: "English", room: "C-302", color: "#F43F5E" },
-  { id: "5", day: 1, start: 13, end: 14, title: "Mathematics", room: "A-201", color: "#6366F1" },
-  { id: "6", day: 2, start: 10, end: 12, title: "Physics Lab", room: "Lab 3", color: "#F59E0B" },
-  { id: "7", day: 2, start: 14, end: 16, title: "Design", room: "D-101", color: "#A855F7" },
-  { id: "8", day: 3, start: 9, end: 10, title: "CS 101", room: "B-105", color: "#10B981" },
-  { id: "9", day: 3, start: 11, end: 12, title: "English", room: "C-302", color: "#F43F5E" },
-  { id: "10", day: 3, start: 15, end: 17, title: "Mathematics", room: "A-201", color: "#6366F1" },
-  { id: "11", day: 4, start: 9, end: 11, title: "Physics Lab", room: "Lab 3", color: "#F59E0B" },
-  { id: "12", day: 4, start: 13, end: 14, title: "Design", room: "D-101", color: "#A855F7" },
-];
+import { useTimetableStore } from "@/stores/timetable-store";
+import { useUIStore } from "@/stores/ui-store";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export default function TimetablePage() {
   const [viewMode, setViewMode] = useState<"week" | "day">("week");
   const today = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
   const [selectedDay, setSelectedDay] = useState(today);
 
+  const events = useTimetableStore(s => s.events);
+  const removeEvent = useTimetableStore(s => s.removeEvent);
+  const setQuickAddOpen = useUIStore(s => s.setQuickAddOpen);
+
+  // Map events to the format expected by the UI (hours as numbers)
+  const mappedEvents = events.map(e => ({
+    ...e,
+    startHour: parseInt(e.start_time.split(":")[0]),
+    endHour: parseInt(e.end_time.split(":")[0])
+  }));
+
   const eventsForView =
     viewMode === "day"
-      ? demoEvents.filter((e) => e.day === selectedDay)
-      : demoEvents;
+      ? mappedEvents.filter((e) => e.day_of_week === selectedDay)
+      : mappedEvents;
+
+  async function handleDelete(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm("Delete this class?")) return;
+    
+    const previousEvents = [...events];
+    removeEvent(id);
+
+    const supabase = createClient();
+    const { error } = await supabase.from("timetable_events").delete().eq("id", id);
+    if (error) {
+      toast.error("Failed to delete class");
+      useTimetableStore.getState().setEvents(previousEvents);
+    }
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-4">
@@ -85,10 +92,13 @@ export default function TimetablePage() {
               Day
             </button>
           </div>
-          <Button size="sm" className="shadow-lg shadow-primary/20 cursor-pointer">
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Add Class
-          </Button>
+          <button 
+            onClick={() => setQuickAddOpen(true)}
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Class</span>
+          </button>
         </div>
       </motion.div>
 
@@ -177,10 +187,10 @@ export default function TimetablePage() {
                     : [selectedDay]
                   ).map((dayIdx) => {
                     const event = eventsForView.find(
-                      (e) => e.day === dayIdx && e.start === hour
+                      (e) => e.day_of_week === dayIdx && e.startHour === hour
                     );
                     const isSpanned = eventsForView.some(
-                      (e) => e.day === dayIdx && e.start < hour && e.end > hour
+                      (e) => e.day_of_week === dayIdx && e.startHour < hour && e.endHour > hour
                     );
                     const isToday = dayIdx === today;
 
@@ -190,28 +200,35 @@ export default function TimetablePage() {
                         className={cn(
                           "relative border-t border-l border-border/30 h-16",
                           isToday && "bg-primary/[0.02]",
-                          !event && !isSpanned && "hover:bg-accent/30 cursor-pointer transition-colors"
+                          !event && !isSpanned && "hover:bg-accent/30 transition-colors"
                         )}
                       >
                         {event && (
                           <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="absolute inset-x-0.5 top-0.5 rounded-lg p-2 text-white cursor-pointer hover:brightness-110 transition-all z-10"
+                            className="absolute inset-x-0.5 top-0.5 rounded-lg p-2 text-white group overflow-hidden z-10"
                             style={{
-                              backgroundColor: event.color,
-                              height: `${(event.end - event.start) * 64 - 4}px`,
+                              backgroundColor: event.subject_color || "#6366F1",
+                              height: `${(event.endHour - event.startHour) * 64 - 4}px`,
                             }}
                           >
-                            <div className="text-xs font-semibold truncate">
-                              {event.title}
+                            <div className="flex items-start justify-between">
+                              <div className="text-xs font-semibold truncate pr-2">
+                                {event.title}
+                              </div>
+                              <button 
+                                onClick={(e) => handleDelete(event.id, e)}
+                                className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-black/20 rounded transition-all cursor-pointer"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
                             </div>
                             <div className="text-[10px] opacity-80 truncate">
                               {event.room}
                             </div>
                             <div className="text-[9px] opacity-70 mt-0.5">
-                              {formatTime(`${event.start}:00`)} –{" "}
-                              {formatTime(`${event.end}:00`)}
+                              {event.start_time.slice(0, 5)} – {event.end_time.slice(0, 5)}
                             </div>
                           </motion.div>
                         )}
