@@ -115,7 +115,14 @@ export function ClassForm({ onSuccess }: { onSuccess: () => void }) {
           onValueChange={(val) => setFormData({ ...formData, subject_id: val || "" })}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select a subject" />
+            {formData.subject_id ? (
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: subjects.find(s => s.id === formData.subject_id)?.color }} />
+                {subjects.find(s => s.id === formData.subject_id)?.name}
+              </div>
+            ) : (
+              <span className="text-muted-foreground">Select a subject</span>
+            )}
           </SelectTrigger>
           <SelectContent>
             {subjects.length === 0 && (

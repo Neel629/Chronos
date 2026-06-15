@@ -104,7 +104,16 @@ export function TaskForm({ onSuccess }: { onSuccess: () => void }) {
           onValueChange={(val) => setFormData({ ...formData, subject_id: val || "none" })}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select a subject" />
+            {formData.subject_id && formData.subject_id !== "none" ? (
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: subjects.find(s => s.id === formData.subject_id)?.color }} />
+                {subjects.find(s => s.id === formData.subject_id)?.name}
+              </div>
+            ) : (
+              <span className={formData.subject_id === "none" ? "" : "text-muted-foreground"}>
+                {formData.subject_id === "none" ? "No subject" : "Select a subject"}
+              </span>
+            )}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">No subject</SelectItem>
