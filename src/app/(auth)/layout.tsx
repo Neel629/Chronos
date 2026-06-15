@@ -19,10 +19,10 @@ export default function AuthLayout({
         href="/"
         className="mb-8 flex items-center gap-2.5 group"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform group-hover:scale-105">
-          <Clock className="h-4.5 w-4.5" />
+        <div className="flex h-10 w-10 items-center justify-center shrink-0">
+          <img src="/logo.png" alt="Chronos Logo" className="h-full w-full object-cover rounded-xl shadow-sm transition-transform group-hover:scale-105" />
         </div>
-        <span className="text-xl font-bold tracking-tight">Chronos</span>
+        <span className="text-2xl font-bold tracking-tight">Chronos</span>
       </Link>
 
       {/* Content */}
